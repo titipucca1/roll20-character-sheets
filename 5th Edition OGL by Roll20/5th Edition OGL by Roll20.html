@@ -11107,8 +11107,8 @@
         return showList;
     };
 
-    var knownSpells = function(data) {
-        var mancerdata = data ? data : getCharmancerData();
+    var knownSpells = (data) => {
+        var mancerdata = (data) ? data : getCharmancerData();
         var allSpells = {
             race: false,
             class: false,
@@ -11117,63 +11117,82 @@
             errors: {class: [], race: []}
         };
         var stats = recalcData(data); //since this can get called in the finish step, make sure it doesn't call setAttrs()
-        var racename = getName("race", mancerdata, true);
-        var subracename = getName("subrace", mancerdata, true);
-        var classname = getName("class", mancerdata, true);
-        var subclassname = getName("subclass", mancerdata, true);
-        var classAbility = mancerdata["l1-class"] && mancerdata["l1-class"].data.class && mancerdata["l1-class"].data.class["Spellcasting Ability"] ? mancerdata["l1-class"].data.class["Spellcasting Ability"] : "";
-        var expandedList = {};
-        var additionalList = {};
-        var blobs = getRelevantBlobs(mancerdata, "1", "l1");
+        var racename       = getName("race", mancerdata, true);
+        var subracename    = getName("subrace", mancerdata, true);
+        var classname      = getName("class", mancerdata, true);
+        var subclassname   = getName("subclass", mancerdata, true);
+        var classAbility   = (mancerdata["l1-class"] && mancerdata["l1-class"].data.class && mancerdata["l1-class"].data.class["Spellcasting Ability"]) ? mancerdata["l1-class"].data.class["Spellcasting Ability"] : "";
+        let expandedList   = {};
+        let additionalList = {};
+        const blobs = getRelevantBlobs(mancerdata, "1", "l1");
 
-        //Collect expanded spell lists
-        _.each(blobs.all, function(blob) {
-            if(blob.Spells) {
-                var spells = JSON.parse(blob.Spells);
-                _.each(spells, function(spell) {
-                    if(spell["Expanded List"]) {
-                        expandedList[spell.Level] = expandedList[spell.Level] ? expandedList[spell.Level].concat(spell["Expanded List"]) : spell["Expanded List"];
-                    }
+        //First look through all Blobs for any blob.Spells
+        _.each(blobs.all, (blob) => {
+            if (blob.Spells) {
+                let spells = JSON.parse(blob.Spells);
+                //Examine each spell to determine if it is "Extended List". "Extended List" adds to the classes spell list.
+                //Ravnica Guilds backgrounds such as Dimir Operative are examples of this
+                _.each(spells, (spell) => {
+                    if (spell["Expanded List"]) {
+                        expandedList[spell.Level] = (expandedList[spell.Level]) ? expandedList[spell.Level].concat(spell["Expanded List"]) : spell["Expanded List"];
+                    };
                 });
-            }
+            };
         });
-        _.each(blobs.sorted, function(sectionblobs, section) {
-            var parentsection = section.replace("sub", "");
+
+        //Look through blobs.sorted.
+        _.each(blobs.sorted, (sectionblobs, section) => {
+            //Subclass needs to be changed to class.
+            let parentsection = section.replace("sub", "");
             additionalList[parentsection] = additionalList[parentsection] || []
-            _.each(sectionblobs, function(blob) {
-                if(blob["Additional Spell List"]) {
+            //Examine eaach blob for "Additional Spell List"
+            _.each(sectionblobs, (blob) => {
+                if (blob["Additional Spell List"]) {
                     additionalList[parentsection].push(blob["Additional Spell List"]);
                 }
             });
         });
+
         //Process spell data from blobs
-        _.each(blobs.sorted, function(sectionblobs, section) {
-            var parentsection = section.replace("sub", "");
-            _.each(sectionblobs, function(blob) {
-                if(blob.Spells) {
-                    var spells = JSON.parse(blob.Spells);
+        _.each(blobs.sorted, (sectionblobs, section) => {
+            const parentsection = section.replace("sub", "");
+            _.each(sectionblobs, (blob) => {
+                //Looks through the blobs for Spells attribute
+                //class.Spells contains the information for how many spells are choosen at each level & Prepared spells to be selected based on ability modifer + 1
+                //[subclass, background, race}.Spells will contain KNOWN, CHOSEN, or EXPANDED LIST for extra spells granted by these sections
+                if (blob.Spells) {
+                    const spells = JSON.parse(blob.Spells);
                     allSpells[parentsection] = allSpells[parentsection] || {known: [], choices: []}
-                    _.each(spells, function(spell) {
+                    _.each(spells, (spell) => {
                         var numSpells = 0;
                         expandedList[spell.Level] = expandedList[spell.Level] || [];
+                        //class.Spells will contain Prepared and Choose.
+                        //These are used to populate the number of selects needed for each spell lists on the Spells slide
                         if(spell.Prepared) {
                             numSpells = Math.max(stats.totals[spell.Prepared.split("+")[0].toLowerCase()].mod, 0) + parseInt(spell.Prepared.split("+")[1]);
                         }
                         if(spell.Choose) {
                             numSpells = parseInt(spell.Choose);
                         }
-                        if(numSpells > 0) {
-                            _.times(numSpells, function(n) {
-                                var thisspell = {Level: parseInt(spell.Level)};
-                                thisspell.List = spell.List ? spell.List : classname;
+                        //If Spells are to be Chosen or Prepared add them to a class list, expand the list, and set the Ability modifier & Level
+                        if (numSpells > 0) {
+                            _.times(numSpells, (n) => {
+                                const thisspell = {
+                                    Level: parseInt(spell.Level)
+                                };
+                                thisspell.List    = (spell.List) ? spell.List : classname;
                                 thisspell.AddList = additionalList[parentsection];
-                                thisspell.Ability = spell.Ability ? spell.Ability : classAbility;
-                                if(parentsection == "class") thisspell["Expanded List"] = expandedList[spell.Level];
+                                thisspell.Ability = (spell.Ability) ? spell.Ability : classAbility;
+                                if (parentsection === "class") thisspell["Expanded List"] = expandedList[spell.Level];
                                 allSpells[parentsection].choices.push(thisspell);
                             });
-                        }
-                        _.each(spell.Known, function(known) {
-                            var thisspell = {Name: known, Level: parseInt(spell.Level)};
+                        };
+                        //Add any spells that are already known from sections such as Forge Domain Cleric starts with identify & searing smite
+                        _.each(spell.Known, (known) => {
+                            var thisspell = {
+                                Name: known, 
+                                Level: parseInt(spell.Level)
+                            };
                             thisspell.Ability = spell.Ability ? spell.Ability : classAbility;
                             thisspell.Source = parentsection;
                             allSpells[parentsection].known.push(thisspell);
@@ -12855,13 +12874,13 @@
     });
 
     on("page:l1-spells", function(eventinfo) {
-        var stats = recalcData();
+        var stats      = recalcData();
         var mancerdata = getCharmancerData();
-        var spellData = knownSpells();
-        var set = {};
-        var titles = {};
-        var sorted = {};
-        var repids = [];
+        var spellData  = knownSpells();
+        var set        = {};
+        var titles     = {};
+        var sorted     = {};
+        var repids     = [];
         var totalchoices = 0;
         var racename = getName("race", mancerdata, true);
         var subracename = getName("subrace", mancerdata, true);
