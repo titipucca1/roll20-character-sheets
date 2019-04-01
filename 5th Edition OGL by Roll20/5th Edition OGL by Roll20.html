@@ -15105,32 +15105,32 @@
         })
     });
 
-    var getKnownLpSpells = function(mancerdata) {
+    const getKnownLpSpells = (mancerdata) =>{
         mancerdata = mancerdata || getCharmancerData();
-        var leveldata = getLevelingData(mancerdata);
-        var previousspells = mancerdata["lp-welcome"].values["spellinfo"] ? JSON.parse(mancerdata["lp-welcome"].values["spellinfo"]) : {};
-        var spelldata = {};
-        var totallevel = 0;
-        var prevtotallevel = 0;
-        _.each(previousspells, function(spell) {
+        const leveldata = getLevelingData(mancerdata);
+        const previousspells = mancerdata["lp-welcome"].values["spellinfo"] ? JSON.parse(mancerdata["lp-welcome"].values["spellinfo"]) : {};
+        let spelldata      = {};
+        let totallevel     = 0;
+        let prevtotallevel = 0;
+        _.each(previousspells, (spell) => {
             spelldata[spell.spellname] = {level: spell.spelllevel};
             if(spell.spellclass) spelldata[spell.spellname].spellclass = spell.spellclass;
             if(spell.spellclass && spell.spellclass.toLowerCase() == "racial") spelldata[spell.spellname].known = "Racial";
             if(spell.spellsource) spelldata[spell.spellname].known = spell.spellsource;
         });
-        _.each(leveldata, function(level) {
-            totallevel += level.currentlevel + level.addlevel;
+        _.each(leveldata, (level) => {
+            totallevel     += level.currentlevel + level.addlevel;
             prevtotallevel += level.currentlevel;
         });
         //Gather known spells
-        _.each(mancerdata, function(page, pagename) {
+        _.each(mancerdata, (page, pagename) => {
             if(pagename.split("-")[0] == "lp") {
                 let choices = [];
                 let choicepage = ["lp-welcome", "lp-levels"].includes(pagename) ? (mancerdata["lp-choices"] ? mancerdata["lp-choices"].values : []) : page.values;
                 _.each(choicepage, function(val) {
                     if((val + "").split(":")[0] === "Blob") choices.push(val.split(":")[1]);
                 });
-                _.each(page.data, function(data, dataname) {
+                _.each(page.data, (data, dataname) => {
                     var thislevel = 0;
                     var prevlevel = 0;
                     var thisclass = {};
@@ -15142,11 +15142,12 @@
                         thislevel = totallevel;
                         prevlevel = prevtotallevel;
                     }
-                    _.each(data.blobs, function(blob, blobname) {
+                    _.each(data.blobs, (blob, blobname) => {
                         if(blob.Multiclass != "no" && ((parseInt(blob.Level) <= thislevel || blob.Level == "all") && !blob.Group) || choices.includes(blobname)) {
+                            //Here we are looking primarily through the blobs for Known spells
                             if(blob.Spells) {
                                 var blobspells = JSON.parse(blob.Spells);
-                                _.each(blobspells, function(blobspell) {
+                                _.each(blobspells, (blobspell) => {
                                     if(blobspell.Known) {
                                         _.each(blobspell.Known, function(spell) {
                                             spelldata[spell] = spelldata[spell] || {level: blobspell.Level};
@@ -15173,8 +15174,6 @@
                 //Gater spells from class features
                 _.each(page.values, function(value, name) {
                     if(name.substr(-18) === "_utilityrow_spells") {
-                        console.log("UTILITYROW SPELLS!");
-                        console.log(JSON.parse(value));
                         spelldata = _.extend(spelldata, JSON.parse(value));
                     }
                 });
@@ -15184,7 +15183,7 @@
         return spelldata;
     };
 
-    var getNewSpells = function(mancerdata, leveldata, blobs) {
+    var getNewSpells = (mancerdata, leveldata, blobs)=> {
         mancerdata = mancerdata || getCharmancerData();
         leveldata = leveldata || getCharmancerData();
         blobs = blobs || getAllLpBlobs(mancerdata, false);
@@ -15256,7 +15255,7 @@
         return result;
     };
 
-    on("page:lp-spells", function(eventinfo) {
+    on("page:lp-spells", (eventinfo) => {
         var mancerdata = getCharmancerData();
         var queries = [];
         var blobs = getAllLpBlobs(mancerdata, false);
@@ -15295,7 +15294,7 @@
             thisclass.list = [thisclass.class];
             totallevel += thislevel;
             thisclass.newspells = 0;
-            _.each(["class", "subclass"], function(section) {
+            _.each(["class", "subclass"], (section) => {
                 if(level[section]) {
                     if(level[section]["data-Spell List"]) thisclass.list = [level[section]["data-Spell List"]];
                     if(level[section]["Spellcasting Ability"]) thisclass.ability = level[section]["Spellcasting Ability"];
@@ -15374,9 +15373,9 @@
             var existinglist = _.pluck(prevspells, "spellname");
             var knownlist = _.keys(spelldata);
             //Look through all the data to see if there's any expanded lists
-            _.each(mancerdata, function(page, pagename) {
+            _.each(mancerdata, (page, pagename) => {
                 if(pagename.split("-")[0] == "lp") {
-                    _.each(page.data, function(data, dataname) {
+                    _.each(page.data, (data, dataname) => {
                         var thislevel = 0;
                         if(dataname.substring(0,5) == "class") {
                             var thisclass = _.findWhere(leveldata, {classnumber: parseInt(dataname[5])});
@@ -15384,11 +15383,11 @@
                         } else {
                             thislevel = totallevel;
                         }
-                        _.each(data.blobs, function(blob, blobname) {
-                            if((parseInt(blob.Level) <= thislevel || blob.Level == "every") && blob.Multiclass != "no") {
+                        _.each(data.blobs, (blob, blobname) => {
+                            if((parseInt(blob.Level) <= thislevel || blob.Level === "every") && blob.Multiclass != "no") {
                                 if(blob.Spells) {
-                                    var blobspells = JSON.parse(blob.Spells);
-                                    _.each(blobspells, function(thisspell) {
+                                    const blobspells = JSON.parse(blob.Spells);
+                                    _.each(blobspells, (thisspell) => {
                                         if(parseInt(thisspell.Level) <= spellmaxlevel) {
                                             if(thisspell["Expanded List"]) {
                                                 knownlist = knownlist.concat(thisspell["Expanded List"]);
@@ -15404,7 +15403,7 @@
             if(knownlist) {
                 queries.push("Category:Spells Name:" + knownlist.join("|"));
             }
-            _.each(classes, function(thisclass) {
+            _.each(classes, (thisclass) => {
                 if(thisclass.maxlevel || thisclass.newcantrips) {
                     newcantrips += thisclass.newcantrips || 0;
                     newspells += thisclass.newspells;
@@ -15416,7 +15415,7 @@
                         thisquery += x;
                         if(x != thisclass.maxlevel) thisquery += "|";
                     }
-                    _.each(thisclass.additional, function(lvl) {
+                    _.each(thisclass.additional, (lvl) => {
                         thisquery += "|" + lvl;
                     });
                     queries.push(thisquery);
@@ -15444,18 +15443,39 @@
                 });
             }
             setCharmancerText(update);
-            getCompendiumQuery(queries, function(data) {
-                var byLevel = {};
-                _.each(data, function(spell) {
-                    if(spell.data.Classes) {
-                        byLevel[spell.data.Level] = byLevel[spell.data.Level] || [];
-                        byLevel[spell.data.Level].push({
-                            name: spell.name,
-                            classes: spell.data.Classes.split(",").map(x => x.trim()),
-                            level: parseInt(spell.data.Level)
+            //Gets the Compendium data for the spell list above.
+            getCompendiumQuery(queries, (data) => {
+                let byLevel = {};
+                _.each(data, (spell) => {
+                    let classes = [];
+                    if (spell.data.Classes) {
+                        classes = spell.data.Classes;
+                    //Ravinca introduced Spells without Classes
+                    } else {
+                       ["class1", "class2", "class3", "class4"].forEach(levelclass => {
+                            //Get the class name out of values & confirm its a spellcaster using data Spellcasting Ability
+                            const name = (mancerdata["lp-levels"].values[`${levelclass}`]) ? mancerdata["lp-levels"].values[`${levelclass}`].split("Classes:")[1] : false;
+                            const ability = (mancerdata["lp-levels"].data[`${levelclass}`] && mancerdata["lp-levels"].data[`${levelclass}`]["Spellcasting Ability"]) ? mancerdata["lp-levels"].data[`${levelclass}`]["Spellcasting Ability"] : false;
+                            if (name && ability) {
+                                //Spell casters have thier class name pushed to the array above
+                                classes.push(name);
+                            };
                         });
-                    }
+
+                       if (classes.length > 0) {
+                            classes = classes.join(', ');
+                       };
+                    };
+
+                    /* This will set the information for populating the spell list */
+                    byLevel[spell.data.Level] = byLevel[spell.data.Level] || [];
+                    byLevel[spell.data.Level].push({
+                        name: spell.name,
+                        classes: classes.split(",").map(x => x.trim()),
+                        level: parseInt(spell.data.Level)
+                    });
                 });
+
                 addSpellSections(byLevel, {
                     newspells: newspells,
                     newcantrips: newcantrips,
@@ -15469,7 +15489,7 @@
         }
     });
 
-    const addSpellSections = function(byLevel, settings) {
+    const addSpellSections = (byLevel, settings) => {
         settings = settings || {};
         let newspells = settings.newspells || 0;
         let newcantrips = settings.newcantrips || 0;
