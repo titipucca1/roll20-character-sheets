@@ -15445,10 +15445,16 @@
                         classes = spell.data.Classes;
                     //Ravinca introduced Spells without Classes
                     } else {
-                        ["class1", "class2", "class3", "class4"].forEach(levelclass => {
+                      ["class1", "class2", "class3", "class4"].forEach(levelclass => {
                             //Get the class name out of values & confirm its a spellcaster using data Spellcasting Ability
                             const name = (mancerdata["lp-levels"].values[`${levelclass}`]) ? mancerdata["lp-levels"].values[`${levelclass}`].split("Classes:")[1] : false;
-                            const ability = (mancerdata["lp-levels"].data[`${levelclass}`] && mancerdata["lp-levels"].data[`${levelclass}`]["Spellcasting Ability"]) ? mancerdata["lp-levels"].data[`${levelclass}`]["Spellcasting Ability"] : false;
+                            const ability = 
+                                //Check if the class has a Spellcasting Ability attribute
+                                (mancerdata["lp-levels"].data[`${levelclass}`] && mancerdata["lp-levels"].data[`${levelclass}`]["Spellcasting Ability"]) ? true : 
+                                //Check if the subclass has a Spellcasting Ability attribute
+                                (mancerdata["lp-levels"].data[`${levelclass}_subclass`] && mancerdata["lp-levels"].data[`${levelclass}_subclass`]["Spellcasting Ability"]) ? true :
+                                //Set to false if the class is not a spellcaster
+                                false;
                             if (name && ability) {
                                 //Spell casters have thier class name pushed to the array above
                                 classes.push(name);
@@ -15461,12 +15467,14 @@
                     };
 
                     /* This will set the information for populating the spell list */
-                    byLevel[spell.data.Level] = byLevel[spell.data.Level] || [];
-                    byLevel[spell.data.Level].push({
-                        name: spell.name,
-                        classes: classes.split(",").map(x => x.trim()),
-                        level: parseInt(spell.data.Level)
-                    });
+                    if (classes.length > 0) {
+                        byLevel[spell.data.Level] = byLevel[spell.data.Level] || [];
+                        byLevel[spell.data.Level].push({
+                            name: spell.name,
+                            classes: classes.split(",").map(x => x.trim()),
+                            level: parseInt(spell.data.Level)
+                        });
+                    };
                 });
                 addSpellSections(byLevel, {
                     newspells: newspells,
@@ -18256,42 +18264,6 @@
             <button class="warning" type="cancel" value="lp-cancel" data-i18n="cancel_charactermancer">Discard and exit</button>
             <button type="action" name="act_continue"><span data-i18n="continue-charmancer">Continue Charactermancer</span></button>
             <p class="warning"><span data-i18n="charmancer-discard-warning">Discard and Exit will discard all choices you’ve made in Charactermancer and let you edit your character sheet directly.</span></p>
-        </div>
-    </div>
-</charmancer>
-
-<charmancer class="sheet-charmancer-lp-spellchoice">
-    <div class="charmancer container">
-        <ol class="steps lp-steps">
-            <li><button class="exit" type="action" name="act_cancel" data-i18n="cancel-u">CANCEL</button></li>
-        </ol>
-        <div class="topbar-holder"></div>
-        <span class="pagelock" style="display: none"></span>
-        <div class="choices spellslide">
-            <p class="instructions"></p>
-        </div>
-
-        <div class="info spellslide">
-            <div class="sheet-compendium-page sheet-spells-info" accept="Rules:Spells"></div>
-        </div>
-
-        <div class="bottombar">
-            <button type="button" data-scroll="#top" class="jump">Back to Top</button>
-            <button class="next" type="action" name="act_lp-spellchoice_back">Accept</button>
-        </div>
-        <div class="choice cancel-prompt">
-            <p class="label">Where would you like to go, Traveler?</p>
-            <button class="warning" type="cancel" value="lp-cancel" data-i18n="cancel_charactermancer">Discard and exit</button>
-            <button type="action" name="act_continue"><span data-i18n="continue-charmancer">Continue Charactermancer</span></button>
-            <p class="warning"><span data-i18n="charmancer-discard-warning">Discard and Exit will discard all choices you’ve made in Charactermancer and let you edit your character sheet directly.</span></p>
-        </div>
-
-        <input type="hidden" name="comp_source">
-        <input type="hidden" name="comp_valid">
-        <input type="hidden" name="comp_newcantrips">
-        <input type="hidden" name="comp_newspells">
-    </div>
-</charmancer>nd Exit will discard all choices you’ve made in Charactermancer and let you edit your character sheet directly.</span></p>
         </div>
     </div>
 </charmancer>
